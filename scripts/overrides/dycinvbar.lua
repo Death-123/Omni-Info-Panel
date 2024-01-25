@@ -1,25 +1,25 @@
-local _RhkC = DYCInfoPanel
-local _I9Pv = _RhkC.DYCModRequire
-local _uusB = _I9Pv("dyc_odwutil")
-local _dB6j = _uusB.ShowObjectDetail
-local _59oF = nil
-local function _pdDj(_ieSu, ...)
+local DYCInfoPanel = DYCInfoPanel
+local DYCModRequire = DYCInfoPanel.DYCModRequire
+local dycOdwutil = DYCModRequire("dyc_odwutil")
+local ShowObjectDetail = dycOdwutil.ShowObjectDetail
+local lastItem = nil
+local function UpdateCursorText(self, ...)
     if TheInput:ControllerAttached() then
-        local _iwg8 = _ieSu.active_slot and _ieSu.active_slot.tile
-        local _68g1 = _ieSu.cursortile
-        local _HpzU = _iwg8 and _iwg8.item
-        local _almK = _68g1 and _68g1.item
-        local _0TLg = _68g1 or _iwg8
-        local _TjVe = _almK or _HpzU
-        if _TjVe ~= _59oF then
-            _dB6j(_TjVe, _0TLg)
-            _59oF = _TjVe
+        local tile = self.active_slot and self.active_slot.tile
+        local cursortile = self.cursortile
+        local tileItem = tile and tile.item
+        local cursorItem = cursortile and cursortile.item
+        local tile_ = cursortile or tile
+        local item = cursorItem or tileItem
+        if item ~= lastItem then
+            ShowObjectDetail(item, tile_)
+            lastItem = item
         end
     end
-    return _ieSu.dycOldUpdateCursorText(_ieSu, ...)
+    return self.dycOldUpdateCursorText(self, ...)
 end
-local function _6hkN(_NbtE)
-    _NbtE.dycOldUpdateCursorText = _NbtE.UpdateCursorText
-    _NbtE.UpdateCursorText = _pdDj
+local function dycInvbar(origin)
+    origin.dycOldUpdateCursorText = origin.UpdateCursorText
+    origin.UpdateCursorText = UpdateCursorText
 end
-return _6hkN
+return dycInvbar

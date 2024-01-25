@@ -1,41 +1,57 @@
-local _RhkC = {}
-local function _I9Pv(_uusB)
-    _RhkC[_uusB] = _RhkC[_uusB] or { des = {}, longDes = {} }
-    return _RhkC[_uusB]
+local desTable = {}
+local function getDes(entity)
+    desTable[entity] = desTable[entity] or { des = {}, longDes = {} }
+    return desTable[entity]
 end
-local function _dB6j(_59oF, _pdDj, _ieSu, _iwg8)
-    _ieSu = _iwg8 and _ieSu and tostring(_ieSu) or _ieSu and string.gsub(tostring(_ieSu), "\n", "") or nil
-    local _68g1 = _I9Pv(_59oF)
-    local _HpzU = _iwg8 and _68g1.longDes or _68g1.des
-    if _pdDj then
-        _pdDj = tostring(_pdDj)
-        local _almK = false
-        if #_HpzU > 0x0 then
-            for _0TLg = 0x1, #_HpzU do
-                if _HpzU[_0TLg].index == _pdDj then
-                    _almK = true
-                    if _ieSu then _HpzU[_0TLg].text = _ieSu else table.remove(_HpzU, _0TLg) end
+local function setDes(desName, desId, desText, isLong)
+    desText = isLong and desText and tostring(desText) or desText and string.gsub(tostring(desText), "\n", "") or nil
+    local oldDes = getDes(desName)
+    local des = isLong and oldDes.longDes or oldDes.des
+    if desId then
+        desId = tostring(desId)
+        local flag = false
+        if #des > 0 then
+            for i = 1, #des do
+                if des[i].index == desId then
+                    flag = true
+                    if desText then
+                        des[i].text = desText
+                    else
+                        table.remove(des, i)
+                    end
                     break
                 end
             end
-            if not _almK and _ieSu then table.insert(_HpzU, { index = _pdDj, text = _ieSu }) end
+            if not flag and desText then
+                table.insert(des, { index = desId, text = desText })
+            end
         else
-            if _ieSu then table.insert(_HpzU, { index = _pdDj, text = _ieSu }) end
+            if desText then
+                table.insert(des, { index = desId, text = desText })
+            end
         end
     end
 end
-function EntityScript:SetPanelDescription(_TjVe, _6hkN) _dB6j(self, _TjVe, _6hkN, false) end
+function EntityScript:SetPanelDescription(desId, desText)
+    setDes(self, desId, desText, false)
+end
 
-function EntityScript:SetPanelLongDescription(_NbtE, _rum8) _dB6j(self, _NbtE, _rum8, true) end
+function EntityScript:SetPanelLongDescription(desId, desText)
+    setDes(self, desId, desText, true)
+end
 
 function EntityScript:GetPanelDescriptions()
-    local _nuEf = _I9Pv(self)
-    return _nuEf.des
+    local des = getDes(self)
+    return des.des
 end
 
 function EntityScript:GetPanelLongDescription()
-    local _ufMP = _I9Pv(self)
-    local _KDEd = ""
-    if #_ufMP.longDes > 0x0 then for _13sz = 0x1, #_ufMP.longDes do _KDEd = _KDEd .. (#_KDEd > 0x0 and " " or "") .. _ufMP.longDes[_13sz].text end end
-    return _KDEd
+    local des = getDes(self)
+    local longDes = ""
+    if #des.longDes > 0 then
+        for i = 1, #des.longDes do
+            longDes = longDes .. (#longDes > 0 and " " or "") .. des.longDes[i].text
+        end
+    end
+    return longDes
 end

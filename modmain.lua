@@ -1,9 +1,9 @@
-local function _krxO() return GLOBAL.TheSim:GetGameID() == "DST" end
-local function _pCAt() return _krxO() and GLOBAL.TheNet:GetIsClient() end
-local function _L4Re() return string.find(GLOBAL.PLATFORM, "STEAM", 0x1, true) end
-local function _2L0Q() if _krxO() then return GLOBAL.ThePlayer else return GLOBAL.GetPlayer() end end
-local function _v6Vt() if _krxO() then return GLOBAL.TheWorld else return GLOBAL.GetWorld() end end
-local function _OqKX() return GLOBAL.TheInput:GetWorldEntityUnderMouse() end
+local function isDST() return GLOBAL.TheSim:GetGameID() == "DST" end
+local function isClient() return isDST() and GLOBAL.TheNet:GetIsClient() end
+local function isSteam() return string.find(GLOBAL.PLATFORM, "STEAM", 1, true) end
+local function getPlayer() if isDST() then return GLOBAL.ThePlayer else return GLOBAL.GetPlayer() end end
+local function getWorld() if isDST() then return GLOBAL.TheWorld else return GLOBAL.GetWorld() end end
+local function GetWorldEntityUnderMouse() return GLOBAL.TheInput:GetWorldEntityUnderMouse() end
 PrefabFiles = {}
 Assets = {
     Asset("ATLAS", "images/dyc_panel_shadow.xml"),
@@ -15,8 +15,8 @@ Assets = {
     Asset("ATLAS", "images/icons/dyc_status_sanity.xml"),
     Asset("IMAGE", "images/icons/dyc_status_sanity.tex"),
 }
-local _CULy = {}
-local _QrIG = {}
+local assetList = {}
+local fonts = {}
 STRINGS = GLOBAL.STRINGS
 RECIPETABS = GLOBAL.RECIPETABS
 Recipe = GLOBAL.Recipe
@@ -31,311 +31,321 @@ rawget = GLOBAL.rawget
 rawset = GLOBAL.rawset
 getmetatable = GLOBAL.getmetatable
 kleiloadlua = GLOBAL.kleiloadlua
-local function _ehYr(_q5Yb)
-    table.insert(Assets, Asset("ATLAS", "images/" .. _q5Yb .. ".xml"))
-    AddMinimapAtlas("images/" .. _q5Yb .. ".xml")
+local function addAsset(name)
+    table.insert(Assets, Asset("ATLAS", "images/" .. name .. ".xml"))
+    AddMinimapAtlas("images/" .. name .. ".xml")
 end
-for _Sohk, _Yghm in pairs(_CULy) do _ehYr(_Yghm) end
-local function _jWya(_DvE3, _QKlE)
-    table.insert(Assets, Asset("FONT", "../mods/" .. modname .. "/fonts/" .. _DvE3 .. ".zip"))
-    local _1bNu = string.lower(_DvE3) .. (_QKlE and "_" .. _QKlE or "")
-    table.insert(GLOBAL.FONTS, { filename = "../mods/" .. modname .. "/fonts/" .. _DvE3 .. ".zip", alias = _1bNu })
-    rawset(GLOBAL, string.upper(_DvE3), _1bNu)
-    return _1bNu
+for _, name in pairs(assetList) do addAsset(name) end
+local function addFont(name, modName)
+    table.insert(Assets, Asset("FONT", "../mods/" .. modname .. "/fonts/" .. name .. ".zip"))
+    local newFontName = string.lower(name) .. (modName and "_" .. modName or "")
+    table.insert(GLOBAL.FONTS, { filename = "../mods/" .. modname .. "/fonts/" .. name .. ".zip", alias = newFontName })
+    rawset(GLOBAL, string.upper(name), newFontName)
+    return newFontName
 end
-for _vl9V, _WIzz in pairs(_QrIG) do _jWya(_WIzz, modname) end
-local _hTKA = "../mods/" .. modname .. "/"
-local _jz9w = function(_Nzo4)
-    local _2IdS = kleiloadlua(_Nzo4)
-    if _2IdS ~= nil and type(_2IdS) == "function" then return _2IdS, "" elseif _2IdS ~= nil and type(_2IdS) == "string" then return nil, _2IdS else return nil end
-end
-local function _M4LQ(_UtkQ, _KXYN)
-    local _gvzK, err = _jz9w(_UtkQ)
-    if _gvzK then
-        if _KXYN then setfenv(_gvzK, _KXYN) end
-        return _gvzK()
+for _, font in pairs(fonts) do addFont(font, modname) end
+local modPath = "../mods/" .. modname .. "/"
+local loadLua = function(path)
+    local luaFn = kleiloadlua(path)
+    if luaFn ~= nil and type(luaFn) == "function" then
+        return luaFn, ""
+    elseif luaFn ~= nil and type(luaFn) == "string" then
+        return nil, luaFn
     else
-        return nil, err or "Failed to load:" .. _UtkQ
+        return nil
     end
 end
-local _w92U = {}
-local function _VeUr(_KY1B)
-    if _KY1B then
-        local _WTBX = _w92U[_KY1B]
-        if _WTBX then
-            return _WTBX
+local function loadScript(path, env)
+    local luaFn, err = loadLua(path)
+    if luaFn then
+        if env then setfenv(luaFn, env) end
+        return luaFn()
+    else
+        return nil, err or "Failed to load:" .. path
+    end
+end
+local scriptLoaded = {}
+local function DYCRequire(path)
+    if path then
+        local luaFn = scriptLoaded[path]
+        if luaFn then
+            return luaFn
         else
-            local _hri2 = ""
-            _WTBX, _hri2 = _M4LQ(_KY1B)
-            if _hri2 then error(_hri2) end
-            _w92U[_KY1B] = _WTBX
-            return _WTBX
+            local errStr = ""
+            luaFn, errStr = loadScript(path)
+            if errStr then error(errStr) end
+            scriptLoaded[path] = luaFn
+            return luaFn
         end
     end
 end
-local function _7TOY(_I4Zv) return _VeUr(_hTKA .. "scripts/" .. _I4Zv .. ".lua") end
-local _Kvqr = require
-local _aOH3 = _7TOY
+local function DYCModRequire(name) return DYCRequire(modPath .. "scripts/" .. name .. ".lua") end
+local rawRequire = require
+local DYCModRequire = DYCModRequire
 GLOBAL.DYCInfoPanel = {}
 GLOBAL.dycip = GLOBAL.DYCInfoPanel
-local _Qt7I = GLOBAL.DYCInfoPanel
-local _jtf6 = _Qt7I
-_jtf6.modname = modname
-_jtf6.modpath = _hTKA
-_jtf6.modinfo = modinfo
-_jtf6.DYCRequire = _VeUr
-_jtf6.DYCModRequire = _7TOY
-_jtf6.dlc = (IsDLCEnabled(0x3) and 0x3) or (IsDLCEnabled(0x2) and 0x2) or (IsDLCEnabled(0x1) and 0x1) or 0x0
-_jtf6.lib = _aOH3("dycmisc")
-_jtf6.localization = _VeUr(_hTKA .. "localization.lua")
-_jtf6.watcher = _aOH3("dyc_watcher")
-_jtf6.ShowBanner = function() end
-_jtf6.PushBanner = function() end
-local _BS31 = {
-    { prefab = "shadowtentacle",    width = 0.5,  height = 0x2, },
+local DYCInfoPanel = GLOBAL.DYCInfoPanel
+DYCInfoPanel.modname = modname
+DYCInfoPanel.modpath = modPath
+DYCInfoPanel.modinfo = modinfo
+DYCInfoPanel.DYCRequire = DYCRequire
+DYCInfoPanel.DYCModRequire = DYCModRequire
+DYCInfoPanel.dlc = (IsDLCEnabled(3) and 3) or (IsDLCEnabled(2) and 2) or (IsDLCEnabled(1) and 1) or 0
+DYCInfoPanel.lib = DYCModRequire("dycmisc")
+DYCInfoPanel.localization = DYCRequire(modPath .. "localization.lua")
+DYCInfoPanel.watcher = DYCModRequire("dyc_watcher")
+DYCInfoPanel.ShowBanner = function() end
+DYCInfoPanel.PushBanner = function() end
+local sizeList = {
+    { prefab = "shadowtentacle",    width = 0.5,  height = 2, },
     { prefab = "mean_flytrap",      width = 0.9,  height = 2.3, },
     { prefab = "thunderbird",       width = 0.85, height = 2.05, },
-    { prefab = "glowfly",           width = 0.6,  height = 0x2, },
+    { prefab = "glowfly",           width = 0.6,  height = 2, },
     { prefab = "peagawk",           width = 0.85, height = 2.1, },
-    { prefab = "krampus",           width = 0x1,  height = 3.75, },
-    { prefab = "nightmarebeak",     width = 0x1,  height = 4.5, },
-    { prefab = "terrorbeak",        width = 0x1,  height = 4.5, },
-    { prefab = "spiderqueen",       width = 0x2,  height = 4.5, },
-    { prefab = "warg",              width = 1.7,  height = 0x5, },
+    { prefab = "krampus",           width = 1,    height = 3.75, },
+    { prefab = "nightmarebeak",     width = 1,    height = 4.5, },
+    { prefab = "terrorbeak",        width = 1,    height = 4.5, },
+    { prefab = "spiderqueen",       width = 2,    height = 4.5, },
+    { prefab = "warg",              width = 1.7,  height = 5, },
     { prefab = "pumpkin_lantern",   width = 0.7,  height = 1.5, },
     { prefab = "jellyfish_planted", width = 0.7,  height = 1.5, },
-    { prefab = "babybeefalo",       width = 0x1,  height = 2.2, },
-    { prefab = "beeguard",          width = 0.65, height = 0x2, },
+    { prefab = "babybeefalo",       width = 1,    height = 2.2, },
+    { prefab = "beeguard",          width = 0.65, height = 2, },
     { prefab = "shadow_rook",       width = 1.8,  height = 3.5, },
     { prefab = "shadow_bishop",     width = 0.9,  height = 3.2, },
     { prefab = "walrus",            width = 1.1,  height = 3.2, },
     { prefab = "teenbird",          width = 1.0,  height = 3.6, },
-    { tag = "player",               width = 0x1,  height = 2.65, },
+    { tag = "player",               width = 1,    height = 2.65, },
     { tag = "ancient_hulk",         width = 1.85, height = 4.5, },
-    { tag = "antqueen",             width = 2.4,  height = 0x8, },
+    { tag = "antqueen",             width = 2.4,  height = 8, },
     { tag = "ro_bin",               width = 0.9,  height = 2.8, },
-    { tag = "gnat",                 width = 0.75, height = 0x3, },
-    { tag = "spear_trap",           width = 0.55, height = 0x3, },
-    { tag = "hangingvine",          width = 0.85, height = 0x4, },
+    { tag = "gnat",                 width = 0.75, height = 3, },
+    { tag = "spear_trap",           width = 0.55, height = 3, },
+    { tag = "hangingvine",          width = 0.85, height = 4, },
     { tag = "weevole",              width = 0.6,  height = 1.2, },
-    { tag = "flytrap",              width = 0x1,  height = 3.4, },
-    { tag = "vampirebat",           width = 0x1,  height = 0x3, },
+    { tag = "flytrap",              width = 1,    height = 3.4, },
+    { tag = "vampirebat",           width = 1,    height = 3, },
     { tag = "pangolden",            width = 1.4,  height = 3.8, },
-    { tag = "spider_monkey",        width = 1.6,  height = 0x4, },
+    { tag = "spider_monkey",        width = 1.6,  height = 4, },
     { tag = "hippopotamoose",       width = 1.35, height = 3.1, },
-    { tag = "piko",                 width = 0.5,  height = 0x1, },
-    { tag = "pog",                  width = 0.85, height = 0x2, },
+    { tag = "piko",                 width = 0.5,  height = 1, },
+    { tag = "pog",                  width = 0.85, height = 2, },
     { tag = "ant",                  width = 0.8,  height = 2.3, },
-    { tag = "scorpion",             width = 0.85, height = 0x2, },
+    { tag = "scorpion",             width = 0.85, height = 2, },
     { tag = "dungbeetle",           width = 0.8,  height = 2.3, },
-    { tag = "civilized",            width = 0x1,  height = 3.2, },
-    { tag = "koalefant",            width = 1.7,  height = 0x4, },
+    { tag = "civilized",            width = 1,    height = 3.2, },
+    { tag = "koalefant",            width = 1.7,  height = 4, },
     { tag = "spat",                 width = 1.5,  height = 3.5, },
     { tag = "lavae",                width = 0.8,  height = 1.5, },
     { tag = "glommer",              width = 0.9,  height = 2.9, },
-    { tag = "deer",                 width = 0x1,  height = 3.1, },
+    { tag = "deer",                 width = 1,    height = 3.1, },
     { tag = "snake",                width = 0.85, height = 1.7, },
-    { tag = "eyeturret",            width = 0x1,  height = 4.5, },
+    { tag = "eyeturret",            width = 1,    height = 4.5, },
     { tag = "primeape",             width = 0.85, height = 1.5, },
     { tag = "monkey",               width = 0.85, height = 1.5, },
     { tag = "ox",                   width = 1.5,  height = 3.75, },
     { tag = "beefalo",              width = 1.5,  height = 3.75, },
-    { tag = "kraken",               width = 0x2,  height = 5.5, },
+    { tag = "kraken",               width = 2,    height = 5.5, },
     { tag = "nightmarecreature",    width = 1.25, height = 3.5, },
-    { tag = "bishop",               width = 0x1,  height = 0x4, },
-    { tag = "rook",                 width = 1.25, height = 0x4, },
-    { tag = "knight",               width = 0x1,  height = 0x3, },
-    { tag = "bat",                  width = 0.8,  height = 0x3, },
+    { tag = "bishop",               width = 1,    height = 4, },
+    { tag = "rook",                 width = 1.25, height = 4, },
+    { tag = "knight",               width = 1,    height = 3, },
+    { tag = "bat",                  width = 0.8,  height = 3, },
     { tag = "minotaur",             width = 1.75, height = 4.5, },
     { tag = "packim",               width = 0.9,  height = 3.75, },
     { tag = "stungray",             width = 0.9,  height = 3.75, },
     { tag = "ghost",                width = 0.9,  height = 3.75, },
-    { tag = "tallbird",             width = 1.25, height = 0x5, },
+    { tag = "tallbird",             width = 1.25, height = 5, },
     { tag = "chester",              width = 0.85, height = 1.5, },
     { tag = "hutch",                width = 0.85, height = 1.5, },
     { tag = "wall",                 width = 0.5,  height = 1.5, },
-    { tag = "largecreature",        width = 0x2,  height = 7.2, },
+    { tag = "largecreature",        width = 2,    height = 7.2, },
     { tag = "insect",               width = 0.5,  height = 1.6, },
     { tag = "smallcreature",        width = 0.85, height = 1.5, },
+
 }
-local function _vbFY(_nGNN)
-    if not _nGNN then return 0x1, 2.65 / 0x2 end
-    for _udl1, _oyQp in pairs(_BS31) do if _oyQp.width and _oyQp.height and (_nGNN.prefab == _oyQp.prefab or (_oyQp.tag and _nGNN:HasTag(_oyQp.tag))) then return _oyQp.width, _oyQp.height / 0x2 end end
-    return 0x1, 2.65 / 0x2
+local function GetEntSize(entity)
+    if not entity then return 1, 2.65 / 2 end
+    for _, size in pairs(sizeList) do
+        if size.width and size.height and (entity.prefab == size.prefab or (size.tag and entity:HasTag(size.tag))) then
+            return size.width, size.height / 2
+        end
+    end
+    return 1, 2.65 / 2
 end
-_jtf6.GetEntSize = _vbFY
-local function _HKBi(_lIhY)
-    local _tJTN, h = _vbFY(_lIhY)
+DYCInfoPanel.GetEntSize = GetEntSize
+local function GetEntHitHeight(entity)
+    local _, h = GetEntSize(entity)
     return h * 1.2
 end
-_jtf6.GetEntHitHeight = _HKBi
-local _NSw0 = function(_a7aI, _ZCdD, _a4IM, _igtU)
+DYCInfoPanel.GetEntHitHeight = GetEntHitHeight
+local RGBAColor = function(r, g, b, a)
     return {
-        r = _a7aI or 0x1,
-        g = _ZCdD or 0x1,
-        b = _a4IM or 0x1,
-        a = _igtU or 0x1,
-        Get = function(_M0z1) return _M0z1.r, _M0z1.g, _M0z1.b, _M0z1.a end,
-        R = function(
-            _rUQW, _4REN)
-            _rUQW.r = _4REN
-            return _rUQW
+        r = r or 1,
+        g = g or 1,
+        b = b or 1,
+        a = a or 1,
+        Get = function(self) return self.r, self.g, self.b, self.a end,
+        R = function(self, newR)
+            self.r = newR
+            return self
         end,
-        G = function(_X99M, _Rv0r)
-            _X99M.g = _Rv0r
-            return _X99M
+        G = function(self, newG)
+            self.g = newG
+            return self
         end,
-        B = function(_yhzf, _G7iq)
-            _yhzf.b = _G7iq
-            return _yhzf
+        B = function(self, newB)
+            self.b = newB
+            return self
         end,
-        A = function(_aEQn, _p8aX)
-            _aEQn.a = _p8aX
-            return _aEQn
+        A = function(self, newA)
+            self.a = newA
+            return self
         end,
     }
 end
-local _tEIp = {
-    common = _NSw0(),
-    uncommon = _NSw0(104.0 / 255.0, 213.0 / 255.0, 237.0 / 255.0),
-    rare = _NSw0(179.0 / 255.0, 107.0 / 255.0, 255.0 / 255.0),
-    unique = _NSw0(255.0 / 255.0, 0.0 / 255.0,
-        255.0 / 255.0),
-    legendary = _NSw0(255.0 / 255.0, 120.0 / 255.0, 82.0 / 255.0),
+local rarityColors = {
+    common = RGBAColor(),
+    uncommon = RGBAColor(104.0 / 255.0, 213.0 / 255.0, 237.0 / 255.0),
+    rare = RGBAColor(179.0 / 255.0, 107.0 / 255.0, 255.0 / 255.0),
+    unique = RGBAColor(255.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0),
+    legendary = RGBAColor(255.0 / 255.0, 120.0 / 255.0, 82.0 / 255.0),
 }
-_jtf6.rarityColors = _tEIp
-_jtf6.RGBAColor = _NSw0
-_jtf6.kill = function(_rnOi)
-    _rnOi = _rnOi or _OqKX()
-    if _rnOi and _rnOi ~= _2L0Q() and _rnOi.components.health then
-        print(_rnOi.name .. "(" .. _rnOi.prefab .. ") is killed!")
-        _rnOi.components.health:Kill()
+DYCInfoPanel.rarityColors = rarityColors
+DYCInfoPanel.RGBAColor = RGBAColor
+DYCInfoPanel.kill = function(entity)
+    entity = entity or GetWorldEntityUnderMouse()
+    if entity and entity ~= getPlayer() and entity.components.health then
+        print(entity.name .. "(" .. entity.prefab .. ") is killed!")
+        entity.components.health:Kill()
     end
 end
-_jtf6.delete = function(_7zQb)
-    _7zQb = _7zQb or _OqKX()
-    if _7zQb and _7zQb ~= _2L0Q() then
-        print(_7zQb.name .. "(" .. _7zQb.prefab .. ") is deleted!")
-        _7zQb:Remove()
+DYCInfoPanel.delete = function(entity)
+    entity = entity or GetWorldEntityUnderMouse()
+    if entity and entity ~= getPlayer() then
+        print(entity.name .. "(" .. entity.prefab .. ") is deleted!")
+        entity:Remove()
     end
 end
-_jtf6.giveandequip = function(_565W, _pcwF)
-    _pcwF = _pcwF or _OqKX() or _2L0Q()
-    local _Atvt = type(_565W) == "string" and dyc_give(_565W, 0x1, _pcwF) or _565W
-    _pcwF.components.inventory:Equip(_Atvt)
+DYCInfoPanel.giveandequip = function(name, entity)
+    entity = entity or GetWorldEntityUnderMouse() or getPlayer()
+    local item = type(name) == "string" and dyc_give(name, 1, entity) or name
+    entity.components.inventory:Equip(item)
 end
-_jtf6.freebuild = function(_MzWA)
-    _MzWA = _MzWA or _2L0Q()
-    _MzWA.components.builder:GiveAllRecipes()
+DYCInfoPanel.freebuild = function(player)
+    player = player or getPlayer()
+    player.components.builder:GiveAllRecipes()
 end
-_jtf6.setfontsize = function(_bryY) _jtf6.objectDetailWindow.fontSize = _bryY or 0x19 end
-_jtf6.cfgs = {}
+DYCInfoPanel.setfontsize = function(fontSize) DYCInfoPanel.objectDetailWindow.fontSize = fontSize or 25 end
+DYCInfoPanel.cfgs = {}
 MODCONFIG = MODCONFIG or GLOBAL.KnownModIndex.GetModConfigurationOptions and GLOBAL.KnownModIndex:GetModConfigurationOptions(modname) or
     GLOBAL.KnownModIndex:GetModConfigurationOptions_Internal(modname)
-if MODCONFIG then for _8msm, _WK9k in pairs(MODCONFIG) do if _WK9k.name then _jtf6.cfgs[_WK9k.name] = GetModConfigData(_WK9k.name) end end end
-local _Drhg = _jtf6.localization
-local _qgvd = _Drhg:GetStrings()
-local _J38n = _jtf6.dlc
-local _MFw9 = { playercontroller = _aOH3("overrides/dycpc"), rocmanager = _aOH3("overrides/dycrocmanager"), }
-local _jpN2 = {}
-local _BohQ = {}
-local _b1cS = {
-    ["widgets/itemtile"] = _aOH3("overrides/dycitemtile"),
-    ["widgets/badge"] = _aOH3("overrides/dycbadge"),
-    ["widgets/uiclock"] = _aOH3("overrides/dycuiclock"),
-    ["widgets/controls"] = _aOH3("overrides/dyccontrols"),
-    ["widgets/inventorybar"] = _aOH3("overrides/dycinvbar"),
-    ["widgets/hoverer"] = _aOH3("overrides/dychoverer"),
+if MODCONFIG then for _, config in pairs(MODCONFIG) do if config.name then DYCInfoPanel.cfgs[config.name] = GetModConfigData(config.name) end end end
+local localization = DYCInfoPanel.localization
+local languageStrings = localization:GetStrings()
+local dlc = DYCInfoPanel.dlc
+local componentInitFuncMap = {
+    playercontroller = DYCModRequire("overrides/dycpc"),
+    rocmanager = DYCModRequire("overrides/dycrocmanager"),
 }
-local _NTaO = {}
-_aOH3("overrides/dycentity")
-local function _dlbj(_mpcF, _dS0h)
-    local _skmD = _jtf6.localization.supportedLanguage
-    _mpcF.name = _dS0h:GetString("modname", _mpcF.name) .. (_mpcF.istest and " test" or "")
-    _mpcF.description = _dS0h:HasString("moddes") and _dS0h:GetString("version") .. ": " .. _mpcF.version .. "\n" .. _dS0h:GetString("moddes") or _mpcF.description
-    local _0tcG = _dS0h:GetString("modicon", "")
-    local _7gSp = _dS0h:GetString("modiconatlas", "")
-    if _0tcG and _7gSp and #_0tcG > 0x0 and #_7gSp > 0x0 then
-        _mpcF.icon_atlas = _7gSp
-        _mpcF.icon = _0tcG
+local prefabPostInitFuncMap = {}
+local prefabPostInitAnyFuncList = {}
+local classPostConstructFuncMap = {
+    ["widgets/itemtile"] = DYCModRequire("overrides/dycitemtile"),
+    ["widgets/badge"] = DYCModRequire("overrides/dycbadge"),
+    ["widgets/uiclock"] = DYCModRequire("overrides/dycuiclock"),
+    ["widgets/controls"] = DYCModRequire("overrides/dyccontrols"),
+    ["widgets/inventorybar"] = DYCModRequire("overrides/dycinvbar"),
+    ["widgets/hoverer"] = DYCModRequire("overrides/dychoverer"),
+}
+local stategraphPostInitFuncMap = {}
+DYCModRequire("overrides/dycentity")
+local function proessModScreen(modInfo, languageStrs)
+    local supportedLanguage = DYCInfoPanel.localization.supportedLanguage
+    modInfo.name = languageStrs:GetString("modname", modInfo.name) .. (modInfo.istest and " test" or "")
+    modInfo.description = languageStrs:HasString("moddes") and languageStrs:GetString("version") .. ": " .. modInfo.version .. "\n" .. languageStrs:GetString("moddes") or modInfo.description
+    local icon = languageStrs:GetString("modicon", "")
+    local icon_atlas = languageStrs:GetString("modiconatlas", "")
+    if icon and icon_atlas and #icon > 0 and #icon_atlas > 0 then
+        modInfo.icon_atlas = icon_atlas
+        modInfo.icon = icon
     end
-    if _mpcF.icon_atlas and _mpcF.icon then
-        local _jBey = "../mods/" .. modname .. "/" .. _mpcF.icon_atlas
-        local _eNz0 = string.gsub(_jBey, "/[^/]*$", "") .. "/" .. _mpcF.icon
-        if GLOBAL.softresolvefilepath(_jBey) and GLOBAL.softresolvefilepath(_eNz0) then
-            local _2tjA = { Asset("ATLAS", _jBey), Asset("IMAGE", _eNz0), }
-            local _EmW4 = GLOBAL.Prefab("modbaseprefabs/MODSCREEN_" .. modname .. "_" .. (_skmD or "en"), nil, _2tjA, nil)
-            GLOBAL.RegisterPrefabs(_EmW4)
-            GLOBAL.TheSim:LoadPrefabs({ _EmW4.name })
+    if modInfo.icon_atlas and modInfo.icon then
+        local icon_atlasPath = "../mods/" .. modname .. "/" .. modInfo.icon_atlas
+        local iconPath = string.gsub(icon_atlasPath, "/[^/]*$", "") .. "/" .. modInfo.icon
+        if GLOBAL.softresolvefilepath(icon_atlasPath) and GLOBAL.softresolvefilepath(iconPath) then
+            local iconAsset = { Asset("ATLAS", icon_atlasPath), Asset("IMAGE", iconPath), }
+            local modScreenPrefab = GLOBAL.Prefab("modbaseprefabs/MODSCREEN_" .. modname .. "_" .. (supportedLanguage or "en"), nil, iconAsset, nil)
+            GLOBAL.RegisterPrefabs(modScreenPrefab)
+            GLOBAL.TheSim:LoadPrefabs({ modScreenPrefab.name })
         end
     end
-    if _mpcF.configuration_options then
-        for _mhZT, _x9x0 in pairs(_mpcF.configuration_options) do
-            if _x9x0.name then _x9x0.label = _dS0h:GetString("modcfg_" .. _x9x0.name, _x9x0.label or "???") end
-            if _x9x0.options then
-                for _PJ2u, _QDQ6 in pairs(_x9x0.options) do
-                    if _QDQ6.lkey then _QDQ6.description = _dS0h:GetString("modcfg_options_" .. _QDQ6.lkey, _QDQ6.description or "???") end
-                    local _DWaU = _QDQ6.hover
-                    if _x9x0.name and _QDQ6.lkey and _DWaU and type(_DWaU) == "string" and #_DWaU > 0x0 then
-                        _QDQ6.hover = _dS0h:GetString("modcfg_" .. _x9x0.name .. "_" .. _QDQ6.lkey .. "_hover",
-                            _DWaU or "???")
+    if modInfo.configuration_options then
+        for _, setting in pairs(modInfo.configuration_options) do
+            if setting.name then setting.label = languageStrs:GetString("modcfg_" .. setting.name, setting.label or "???") end
+            if setting.options then
+                for _, option in pairs(setting.options) do
+                    if option.lkey then option.description = languageStrs:GetString("modcfg_options_" .. option.lkey, option.description or "???") end
+                    local isHover = option.hover
+                    if setting.name and option.lkey and isHover and type(isHover) == "string" and #isHover > 0 then
+                        option.hover = languageStrs:GetString("modcfg_" .. setting.name .. "_" .. option.lkey .. "_hover", isHover or "???")
                     end
                 end
             end
-            local _kNBA = _x9x0.hover
-            if _x9x0.name and _kNBA and type(_kNBA) == "string" and #_kNBA > 0x0 then _x9x0.hover = _dS0h:GetString("modcfg_" .. _x9x0.name .. "_hover", _kNBA) end
+            local hover = setting.hover
+            if setting.name and hover and type(hover) == "string" and #hover > 0 then setting.hover = languageStrs:GetString("modcfg_" .. setting.name .. "_hover", hover) end
         end
     end
 end
-local function _sap9() return rawget(GLOBAL, "DYCLegendary") ~= nil end
-local _bW8N = GLOBAL.KnownModIndex.InitializeModInfo
-GLOBAL.KnownModIndex.InitializeModInfo = function(_Giu0, _r91j)
-    local _enTF = _bW8N(_Giu0, _r91j)
-    if _r91j == modname then
-        local _Ufjy = _jtf6.cfgs.language
-        _Ufjy = _Ufjy ~= nil and type(_Ufjy) == "string" and _Ufjy ~= "auto" and _Ufjy
-        _qgvd = _Drhg:GetStrings(_Ufjy)
-        _dlbj(_enTF, _qgvd)
-        if not _sap9() then _jtf6.Init() end
+local function isDYCLegendaryLoaded() return rawget(GLOBAL, "DYCLegendary") ~= nil end
+local oldInitializeModInfo = GLOBAL.KnownModIndex.InitializeModInfo
+GLOBAL.KnownModIndex.InitializeModInfo = function(self, name)
+    local modInfo = oldInitializeModInfo(self, name)
+    if name == modname then
+        local language = DYCInfoPanel.cfgs.language
+        language = language ~= nil and type(language) == "string" and language ~= "auto" and language
+        languageStrings = localization:GetStrings(language)
+        proessModScreen(modInfo, languageStrings)
+        if not isDYCLegendaryLoaded() then DYCInfoPanel.Init() end
     end
-    return _enTF
+    return modInfo
 end
-if _sap9() then
+if isDYCLegendaryLoaded() then
     print("Legendary weapon is enabled.")
     return
 end
-local function _Mm7S(_mbTI, _PyAw, _UxZ3, _KoXI)
-    _mbTI = string.upper(_mbTI)
-    _PyAw = string.lower(_PyAw)
-    local _jZPD = _UxZ3:GetStrings(_PyAw)
-    STRINGS.NAMES[_mbTI] = _jZPD:GetString("name")
-    STRINGS.RECIPE_DESC[_mbTI] = _jZPD:GetString("des")
-    STRINGS.CHARACTERS.GENERIC.DESCRIBE[_mbTI] = _jZPD:GetString("char_des")
-    if not _KoXI then return end
-    STRINGS.NAMES[_mbTI .. "_ITEM"] = _jZPD:GetString("name")
-    STRINGS.RECIPE_DESC[_mbTI .. "_ITEM"] = _jZPD:GetString("des")
-    STRINGS.CHARACTERS.GENERIC.DESCRIBE[_mbTI .. "_ITEM"] = _jZPD:GetString("char_des")
+local function addToStrings(nameKey, langkey, localization, flag)
+    nameKey = string.upper(nameKey)
+    langkey = string.lower(langkey)
+    local localizationStrings = localization:GetStrings(langkey)
+    STRINGS.NAMES[nameKey] = localizationStrings:GetString("name")
+    STRINGS.RECIPE_DESC[nameKey] = localizationStrings:GetString("des")
+    STRINGS.CHARACTERS.GENERIC.DESCRIBE[nameKey] = localizationStrings:GetString("char_des")
+    if not flag then return end
+    STRINGS.NAMES[nameKey .. "_ITEM"] = localizationStrings:GetString("name")
+    STRINGS.RECIPE_DESC[nameKey .. "_ITEM"] = localizationStrings:GetString("des")
+    STRINGS.CHARACTERS.GENERIC.DESCRIBE[nameKey .. "_ITEM"] = localizationStrings:GetString("char_des")
 end
-local function _40Q6(_46Pm) end
-_jtf6.SetLanguage = function(_10wY)
-    _Drhg:SetLanguage(_10wY)
-    _qgvd = _Drhg.strings
-    _40Q6(_qgvd)
+local function someFunc(languageStrings) end
+DYCInfoPanel.SetLanguage = function(language)
+    localization:SetLanguage(language)
+    languageStrings = localization.strings
+    someFunc(languageStrings)
 end
-_jtf6.sl = _jtf6.SetLanguage
-local _ZqBE = _jtf6.cfgs.language
-_ZqBE = _ZqBE and _ZqBE ~= "auto" and _ZqBE
-_jtf6.SetLanguage(_ZqBE)
+DYCInfoPanel.sl = DYCInfoPanel.SetLanguage
+local languageSetted = DYCInfoPanel.cfgs.language
+languageSetted = languageSetted and languageSetted ~= "auto" and languageSetted
+DYCInfoPanel.SetLanguage(languageSetted)
 local function _yVl2(_JFzQ, _x04G, _sLoX, _HDXv, _uXOT, _TnF4, _bbet)
     _JFzQ = string.lower(_JFzQ)
     _x04G = string.lower(_x04G)
-    _sLoX = _sLoX or { Ingredient("cutgrass", 0x1) }
+    _sLoX = _sLoX or { Ingredient("cutgrass", 1) }
     _HDXv = _HDXv or RECIPETABS.TOOLS
     _uXOT = _uXOT or TECH.NONE
     local _Xtky = Recipe(_JFzQ, _sLoX, _HDXv, _uXOT)
-    if #_x04G > 0x2 and string.sub(_x04G, 0x1, 0x2) == "v_" then
+    if #_x04G > 2 and string.sub(_x04G, 1, 2) == "v_" then
         _Xtky.atlas = "images/inventoryimages.xml"
-        _Xtky.image = string.sub(_x04G, 0x3, #_x04G) .. ".tex"
+        _Xtky.image = string.sub(_x04G, 3, #_x04G) .. ".tex"
     else
         _Xtky.atlas = "images/inventoryimages/" .. _x04G .. ".xml"
         _Xtky.image = _x04G .. ".tex"
@@ -352,85 +362,92 @@ local function _OW4z(_AaJe, _bj4p, _LJqv)
     table.insert(Assets, Asset("ATLAS", _LJqv))
     return _DfjL
 end
-local _gCjv = function(_9FOv, _WLT9, _A0iV, _Iy4u)
-    _WLT9 = _WLT9 or 0x8
-    local _nKRJ, MI = _Iy4u and 0xff or 0x7e, _Iy4u and 0x0 or 0x21
-    local _sqsC = ""
-    local _VS0R = function(_jJsm, _MJz5, _wnsA)
-        if _wnsA or (_jJsm ~= 0x9 and _jJsm ~= 0xa and _jJsm ~= 0xd and _jJsm ~= 0x20) then
-            _jJsm = _jJsm + _MJz5
-            while _jJsm > _nKRJ do _jJsm = _jJsm - (_nKRJ - MI + 0x1) end
-            while _jJsm < MI do _jJsm = _jJsm + (_nKRJ - MI + 0x1) end
+local decode = function(str, offset, interval, flag)
+    offset = offset or 8
+    local num1, num2 = flag and 255 or 126, flag and 0 or 33
+    local decodeStr = ""
+    local encodeChar = function(char, offset, flag)
+        if flag or (char ~= 9 and char ~= 10 and char ~= 13 and char ~= 32) then
+            char = char + offset
+            while char > num1 do char = char - (num1 - num2 + 1) end
+            while char < num2 do char = char + (num1 - num2 + 1) end
         end
-        return _jJsm
+        return char
     end
-    for _A5ZV = 0x1, #_9FOv do
-        local _AEWe = string.byte(string.sub(_9FOv, _A5ZV, _A5ZV))
-        if _A0iV and _A0iV > 0x1 and _A5ZV % _A0iV == 0x0 then _AEWe = _VS0R(_AEWe, _WLT9, _Iy4u) else _AEWe = _VS0R(_AEWe, -_WLT9, _Iy4u) end
-        _sqsC = _sqsC .. string.char(_AEWe)
+    for i = 1, #str do
+        local char = string.byte(string.sub(str, i, i))
+        if interval and interval > 1 and i % interval == 0 then
+            char = encodeChar(char, offset, flag)
+        else
+            char = encodeChar(char, -offset, flag)
+        end
+        decodeStr = decodeStr .. string.char(char)
     end
-    return _sqsC
+    return decodeStr
 end
-local _kZxF = function(_VKcT)
-    local _mmKd = GLOBAL[_gCjv("qw")][_gCjv("wxmv")]
-    local _UbZ1, err = _mmKd(_VKcT, "r")
+local readFile = function(path)
+    local open = GLOBAL[decode("qw")][decode("wxmv")]
+    local file, err = open(path, "r")
     if err then else
-        local _H6j9 = _UbZ1:read("*all")
-        _UbZ1:close()
-        return _H6j9
+        local content = file:read("*all")
+        file:close()
+        return content
     end
     return ""
 end
-local _887a = GLOBAL[_gCjv("stmqtwilt}i")]
-local _sqix = GLOBAL[_gCjv("twil{|zqvo")]
-local _AHbq = GLOBAL[_gCjv("{m|nmv~")]
-local _6WGt = function(_lWBc)
-    local _GQTk = "../mods/" .. modname .. "/"
-    local _MoQy = _887a(_GQTk .. _lWBc)
-    if _MoQy ~= nil and type(_MoQy) == "function" then
-        return _MoQy
-    elseif _MoQy ~= nil and type(_MoQy) == "string" then
-        local _g7nE = _gCjv(_kZxF(_GQTk .. _lWBc), 0xb, 0x3)
-        return _sqix(_g7nE)
+local kleiloadlua = GLOBAL[decode("stmqtwilt}i")]
+local loadstring = GLOBAL[decode("twil{|zqvo")]
+local setfenv = GLOBAL[decode("{m|nmv~")]
+local loadFile = function(name)
+    local modPath = "../mods/" .. modname .. "/"
+    local luaFn = kleiloadlua(modPath .. name)
+    if luaFn ~= nil and type(luaFn) == "function" then
+        return luaFn
+    elseif luaFn ~= nil and type(luaFn) == "string" then
+        local luaStringDecoded = decode(readFile(modPath .. name), 11, 3)
+        return loadstring(luaStringDecoded)
     else
         return nil
     end
 end
-local function _vWfl(_1xnE, _BPsO)
-    local _kth8 = _6WGt(_1xnE)
-    if _kth8 then
-        if _BPsO then _AHbq(_kth8, _BPsO) end
-        return _kth8(), " "
+local function loadFileLua(name, env)
+    local luaFn = loadFile(name)
+    if luaFn then
+        if env then setfenv(luaFn, env) end
+        return luaFn(), " "
     else
         return nil, " "
     end
 end
-_jtf6[_gCjv("twkitLi|i")] = _jtf6.lib[_gCjv("TwkitLi|i")]()
-_jtf6[_gCjv("twkitLi|i")]:SetName("DYCInfoPanel")
-_jtf6[_gCjv("o}q{")] = _vWfl(_gCjv("{kzqx|{7l#ko}q{6t}i"))
-local function _FFPV(_FhCr, _pXxd)
-    local _KTqD = rawget(GLOBAL, "KnownModIndex")
-    local _uH5j = _KTqD and _KTqD.savedata and _KTqD.savedata.known_mods
-    for _QuBY, _J6K1 in pairs(_uH5j) do
-        if _J6K1 and _J6K1.enabled and _J6K1.modinfo then
-            local _yf9t = _J6K1.modinfo.name
-            local _hS3K = _J6K1.modinfo.author
-            if _yf9t and type(_yf9t) == "string" and string.find(string.lower(_yf9t), string.lower(_FhCr)) and (not _pXxd or (_hS3K and type(_hS3K) == "string" and string.find(string.lower(_hS3K), string.lower(_pXxd)))) then return true end
+DYCInfoPanel[decode("twkitLi|i")] = DYCInfoPanel.lib[decode("TwkitLi|i")]()
+DYCInfoPanel[decode("twkitLi|i")]:SetName("DYCInfoPanel")
+DYCInfoPanel[decode("o}q{")] = loadFileLua(decode("{kzqx|{7l#ko}q{6t}i"))
+local function checkMod(modName, modAuthor)
+    local KnownModIndex = rawget(GLOBAL, "KnownModIndex")
+    local known_mods = KnownModIndex and KnownModIndex.savedata and KnownModIndex.savedata.known_mods
+    for _, mod in pairs(known_mods) do
+        if mod and mod.enabled and mod.modinfo then
+            local name = mod.modinfo.name
+            local author = mod.modinfo.author
+            if name and type(name) == "string" and string.find(string.lower(name), string.lower(modName)) and
+                (not modAuthor or (author and type(author) == "string" and string.find(string.lower(author), string.lower(modAuthor)))) then
+                return true
+            end
         end
     end
 end
-local function _rB9o() return _FFPV("l.m.u") or _FFPV("lmu") end
-local function _tX6e() return _FFPV("chinese", "kaoyu") end
-local function _9j4R() return rawget(GLOBAL, "FONTS_CN_CHARS") ~= nil end
-local function _yYuN()
-    local _y8rl = rawget(GLOBAL, "DYCChinese")
-    local _d1lI = _y8rl and type(_y8rl) == "table" and _y8rl.fontScale
-    _d1lI = _d1lI ~= nil and type(_d1lI) == "number" and _d1lI
-    return _d1lI
+local function checkLmu() return checkMod("l.m.u") or checkMod("lmu") end
+local function checkKaoyu() return checkMod("chinese", "kaoyu") end
+local function isFontsCN() return rawget(GLOBAL, "FONTS_CN_CHARS") ~= nil end
+local function getFontScale()
+    local DYCChinese = rawget(GLOBAL, "DYCChinese")
+    local fontScale = DYCChinese and type(DYCChinese) == "table" and DYCChinese.fontScale
+    fontScale = fontScale ~= nil and type(fontScale) == "number" and fontScale
+    return fontScale
 end
-local _GL3k = "\121\105\121\117"
-local _Ye62 = "\231\191\188\232\175\173"
-local _0Qm2 = {
+local yiyu1 = "\121\105\121\117"
+local yiyu2 = "\231\191\188\232\175\173"
+local banlist = {
     "642704851",
     "701574438",
     "834039799",
@@ -447,136 +464,144 @@ local _0Qm2 = {
     "2199037549203167802",
     "2199037549203167776",
     "2199037549203167775",
-    "2199037549203168585", }
-local _IQZ3 = function(_xxYA)
-    if _xxYA and (string.find(string.lower(_xxYA), _GL3k, 0x1, true) or string.find(string.lower(_xxYA), _Ye62, 0x1, true)) then return true end
-    for _b2CK, _Vv4j in pairs(_0Qm2) do if _xxYA and _xxYA == "workshop-" .. _Vv4j then return true end end
+    "2199037549203168585",
+}
+local isBaned = function(name)
+    if name and (string.find(string.lower(name), yiyu1, 1, true) or string.find(string.lower(name), yiyu2, 1, true)) then return true end
+    for _, id in pairs(banlist) do if name and name == "workshop-" .. id then return true end end
     return false
 end
-local _ASGz = { "1883724202", }
-local function _pARS(_4Wq5)
-    local _mc1R = _IQZ3(_4Wq5)
-    local _MBfS = false
-    for _ixXQ, _cVGN in pairs(_ASGz) do
-        if _4Wq5 and _4Wq5 == "workshop-" .. _cVGN then
-            _MBfS = true
+local banlist2 = { "1883724202", }
+local function isBaned2(name)
+    local baned = isBaned(name)
+    local flag = false
+    for _, id in pairs(banlist2) do
+        if name and name == "workshop-" .. id then
+            flag = true
             break
         end
     end
-    return _mc1R or _MBfS
+    return baned or flag
 end
-local _itzC = false
-local function _jWBi()
-    if _itzC then return end
-    _itzC = true
-    local _kWMh = ""
-    for _8g9L, _h2n9 in pairs(GLOBAL.KnownModIndex.savedata.known_mods) do
-        if _h2n9.enabled and (_pARS(_8g9L) or (_h2n9.modinfo and _h2n9.modinfo.author and _pARS(_h2n9.modinfo.author))) then
-            _kWMh = #
-                _kWMh > 0x0 and _kWMh .. "," .. _8g9L or _8g9L
+local checkedBan = false
+local function checkBanMod()
+    if checkedBan then return end
+    checkedBan = true
+    local banedNames = ""
+    for name, mod in pairs(GLOBAL.KnownModIndex.savedata.known_mods) do
+        if mod.enabled and (isBaned2(name) or (mod.modinfo and mod.modinfo.author and isBaned2(mod.modinfo.author))) then
+            banedNames = #banedNames > 0 and banedNames .. "," .. name or name
         end
     end
-    if #_kWMh > 0x0 then
-        GLOBAL.error("The game is incompatible with following mod(s):\n" .. _kWMh)
-        GLOBAL.assert(nil, "The game is incompatible with following mod(s):\n" .. _kWMh)
-        print("’]]" + 0x3)
-        local _bV7t = GLOBAL.error
-        GLOBAL.error(_kWMh)
+    if #banedNames > 0 then
+        GLOBAL.error("The game is incompatible with following mod(s):\n" .. banedNames)
+        GLOBAL.assert(nil, "The game is incompatible with following mod(s):\n" .. banedNames)
+        print("’]]" + 3)
+        local err = GLOBAL.error
+        GLOBAL.error(banedNames)
         GLOBAL.error("" .. math.min)
         GLOBAL.assert(nil)
-        _bV7t(groups)
+        err(groups)
         local _qmac = {} + math.random()
-        _bV7t(entity)
+        err(entity)
         AddPrefabPostInit = fff
         AddPrefabPostInitAny = qwer
-        _jtf6 = 0x22b8
+        DYCInfoPanel = 0x22b8
         SuperWall = GGG
     end
 end
 AddPrefabPostInit("world",
-    function(_50xE)
-        _50xE:DoPeriodicTask(FRAMES,
+    function(self)
+        self:DoPeriodicTask(FRAMES,
             function()
-                local _4dJK = _2L0Q()
-                if not _4dJK then return end
-                if _50xE.DYCLPlayerHud == _4dJK.HUD or _4dJK.HUD == nil then return else _50xE.DYCLPlayerHud = _4dJK.HUD end
-                _jWBi()
-                local _xXWA = _jtf6.cfgs.language
-                _xXWA = _xXWA and _xXWA ~= "auto" and _xXWA
-                _jtf6.SetLanguage(_xXWA)
-                local _LSH0 = _jtf6.localData
-                _jtf6.guis:Init({ localization = _Drhg, multiLineScale = _yYuN() or _9j4R() and 0.7 or 0x1, textWidthScale = _rB9o() and not _tX6e() and 0.7 or 0x1, language = _Drhg.supportedLanguage, })
-                local _Z7Tb = _jtf6.guis.Root
-                local _ymIj = _4dJK.HUD.root:AddChild(_Z7Tb({ keepTop = false, }))
-                _4dJK.HUD.dycIPObjectDetailRoot = _ymIj
-                _jtf6["ShowMessage"] = function(_IHMx, _vfl7, _Wynt, _zin4, _Hynt, _gWys, _nhEs, _C8OS, _rn5x)
-                    _jtf6.guis["MessageBox"]["ShowMessage"](_IHMx, _vfl7, _ymIj, _qgvd, _Wynt, _zin4, _Hynt,
-                        _gWys, _nhEs, _C8OS, _rn5x)
+                local player = getPlayer()
+                if not player then return end
+                if self.DYCLPlayerHud == player.HUD or player.HUD == nil then
+                    return
+                else
+                    self.DYCLPlayerHud = player.HUD
                 end
-                local _Bmor = _jtf6.guis.ObjectDetailWindow
-                local _LYOm = _ymIj:AddChild(_Bmor({ fontSize = _jtf6.cfgs.infopanelfs, opacity = _jtf6.cfgs.infopanelopacity, }))
-                _LYOm.draggable = false
-                _jtf6.objectDetailWindow = _LYOm
-                _LYOm:Hide()
-                local _FoBQ = _jtf6.guis.BannerHolder
-                local _UYE9 = _4dJK.HUD.root:AddChild(_FoBQ())
-                _4dJK.HUD.dycIPBannerHolder = _UYE9
-                _jtf6.bannerSystem = _UYE9
-                _jtf6.ShowBanner = function(...) _jtf6.bannerSystem:ShowMessage(...) end
-                _jtf6.PushBanner = function(...) _jtf6.bannerSystem:PushMessage(...) end
-                _jtf6.watcher:Start()
-                local _8pcV = GLOBAL[_gCjv("\\]VQVO")][_gCjv("LI[JgLWVM")]
-                GLOBAL[_gCjv("i{{mz|")](_8pcV, _gCjv("M{{mv|qit nqtm uq{{qvo)"))
-                local _itko = env[_gCjv("zknv")]
-                if _itko then
-                    local _K3EX = _itko()
-                    if _K3EX then GLOBAL[_gCjv("mzzwz")](_K3EX) end
+                checkBanMod()
+                local language = DYCInfoPanel.cfgs.language
+                language = language and language ~= "auto" and language
+                DYCInfoPanel.SetLanguage(language)
+                local localData = DYCInfoPanel.localData
+                DYCInfoPanel.guis:Init({
+                    localization = localization,
+                    multiLineScale = getFontScale() or isFontsCN() and 0.7 or 1,
+                    textWidthScale = checkLmu() and not checkKaoyu() and 0.7 or 1,
+                    language = localization.supportedLanguage,
+                })
+                local guiRoot = DYCInfoPanel.guis.Root
+                local dycIPObjectDetailRoot = player.HUD.root:AddChild(guiRoot({ keepTop = false, }))
+                player.HUD.dycIPObjectDetailRoot = dycIPObjectDetailRoot
+                DYCInfoPanel["ShowMessage"] = function(message, title, callback, fontSize, animateWidth, animateHeight, width, height, ifAnimateIn)
+                    DYCInfoPanel.guis["MessageBox"]["ShowMessage"](message, title, dycIPObjectDetailRoot, languageStrings, callback, fontSize, animateWidth, animateHeight, width, height, ifAnimateIn)
+                end
+                local ObjectDetailWindow = DYCInfoPanel.guis.ObjectDetailWindow
+                local objectDetailWindow = dycIPObjectDetailRoot:AddChild(ObjectDetailWindow({ fontSize = DYCInfoPanel.cfgs.infopanelfs, opacity = DYCInfoPanel.cfgs.infopanelopacity, }))
+                objectDetailWindow.draggable = false
+                DYCInfoPanel.objectDetailWindow = objectDetailWindow
+                objectDetailWindow:Hide()
+                local dycBannerHolder = DYCInfoPanel.guis.BannerHolder
+                local bannerHolder = player.HUD.root:AddChild(dycBannerHolder())
+                player.HUD.dycIPBannerHolder = bannerHolder
+                DYCInfoPanel.bannerSystem = bannerHolder
+                DYCInfoPanel.ShowBanner = function(...) DYCInfoPanel.bannerSystem:ShowMessage(...) end
+                DYCInfoPanel.PushBanner = function(...) DYCInfoPanel.bannerSystem:PushMessage(...) end
+                DYCInfoPanel.watcher:Start()
+                local DASB_DONE = GLOBAL[decode("\\]VQVO")][decode("LI[JgLWVM")]
+                GLOBAL[decode("i{{mz|")](DASB_DONE, decode("M{{mv|qit nqtm uq{{qvo)"))
+                local rcfn = env[decode("zknv")]
+                if rcfn then
+                    local err = rcfn()
+                    if err then GLOBAL[decode("mzzwz")](err) end
                 end
             end)
-        for _TEcl, _m0Du in pairs(RECIPETABS) do _m0Du.priority = _m0Du.priority or 0x0 end
+        for _, recipeTab in pairs(RECIPETABS) do recipeTab.priority = recipeTab.priority or 0 end
     end)
-rcfn = _vWfl(_gCjv("{kzqx|{7ik|qwvy}m}mz6t}i"))
-_jtf6.Init = function()
-    if _jtf6.inited then return end
-    _jtf6.inited = true
-    local _j5Rs = _Kvqr("screens/modconfigurationscreen")
-    local _ilW9 = GLOBAL.TheFrontEnd.PushScreen
-    function GLOBAL.TheFrontEnd:PushScreen(_QXHO, _DPUb, ...)
-        if _QXHO and _QXHO:is_a(_j5Rs) then _aOH3("overrides/dycmcfgscr")(_QXHO) end
-        return _ilW9(self, _QXHO, _DPUb, ...)
+rcfn = loadFileLua(decode("{kzqx|{7ik|qwvy}m}mz6t}i"))
+DYCInfoPanel.Init = function()
+    if DYCInfoPanel.inited then return end
+    DYCInfoPanel.inited = true
+    local modconfigurationscreen = rawRequire("screens/modconfigurationscreen")
+    local oldPushScreen = GLOBAL.TheFrontEnd.PushScreen
+    function GLOBAL.TheFrontEnd:PushScreen(origin, arg, ...)
+        if origin and origin:is_a(modconfigurationscreen) then DYCModRequire("overrides/dycmcfgscr")(origin) end
+        return oldPushScreen(self, origin, arg, ...)
     end
 end
-for _kjoh, _caQS in pairs(_MFw9) do AddComponentPostInit(_kjoh, _caQS) end
-for _u0Cb, _lpD4 in pairs(_b1cS) do AddClassPostConstruct(_u0Cb, _lpD4) end
-for _vkZc, _HUM6 in pairs(_NTaO) do AddStategraphPostInit(_vkZc, _HUM6) end
-for _GkIX, _v0te in pairs(_jpN2) do AddPrefabPostInit(_GkIX, _v0te) end
-for _Taad, _Lvsj in pairs(_BohQ) do AddPrefabPostInitAny(_Lvsj) end
-local _o98s = function(_TVXA) return math.floor(_TVXA + 0.5) end
-local _uNst = function(_ZREA, _GrL1, _C3wD) return math.min(math.max(_ZREA, _GrL1), _C3wD) end
-local function _Hxrl(_oAs9) return _oAs9 ~= nil and type(_oAs9) == "number" end
-local function _1QXI(_WunV) return _Hxrl(_WunV) and _WunV > 0x0 end
-local function _xhCR(_H9pb) return _Hxrl(_H9pb) and _H9pb >= 0x0 end
-local function _GKGt(_UBQu) return _Hxrl(_UBQu) and _UBQu < 0x0 end
-local function _MEUv(_DMl3) return _Hxrl(_DMl3) and _DMl3 ~= 0x0 end
-local function _vtBi(_35Nm) return _35Nm ~= nil and type(_35Nm) == "string" end
-local function _eZDu(_AP6H) return _AP6H ~= nil and type(_AP6H) == "table" end
-local function _hpPO(_48pA) return _48pA ~= nil and type(_48pA) == "function" end
-local function _9C6r(_J1rV) return _vtBi(_J1rV) and #_J1rV > 0x0 end
-local function _6Jwo(_HghK, ...)
-    local _7tp4 = { ... }
-    if _eZDu(_7tp4[0x1]) then _7tp4 = _7tp4[0x1] end
-    local _7w47 = ""
-    local _Inoo = 0x0
-    for _7H9x, _ebjB in pairs(_7tp4) do
-        if _9C6r(_ebjB) or _Hxrl(_ebjB) then
-            _Inoo = _Inoo + 0x1
-            _7w47 = _7w47 .. (_Inoo > 0x1 and _HghK or "") .. _ebjB
+for component, initFunc in pairs(componentInitFuncMap) do AddComponentPostInit(component, initFunc) end
+for class, func in pairs(classPostConstructFuncMap) do AddClassPostConstruct(class, func) end
+for stategraph, func in pairs(stategraphPostInitFuncMap) do AddStategraphPostInit(stategraph, func) end
+for prefab, func in pairs(prefabPostInitFuncMap) do AddPrefabPostInit(prefab, func) end
+for _, func in pairs(prefabPostInitAnyFuncList) do AddPrefabPostInitAny(func) end
+local roundUp = function(num) return math.floor(num + 0.5) end
+local clamp = function(num, max, min) return math.min(math.max(num, max), min) end
+local function isNumber(num) return num ~= nil and type(num) == "number" end
+local function isPositive(num) return isNumber(num) and num > 0 end
+local function isPosOrZero(num) return isNumber(num) and num >= 0 end
+local function isNegative(num) return isNumber(num) and num < 0 end
+local function notEqZero(num) return isNumber(num) and num ~= 0 end
+local function isStr(str) return str ~= nil and type(str) == "string" end
+local function isTable(table) return table ~= nil and type(table) == "table" end
+local function isFun(fun) return fun ~= nil and type(fun) == "function" end
+local function isStrNotEmpty(str) return isStr(str) and #str > 0 end
+local function toStr(separator, ...)
+    local table = { ... }
+    if isTable(table[1]) then table = table[1] end
+    local str = ""
+    local i = 0
+    for _, item in pairs(table) do
+        if isStrNotEmpty(item) or isNumber(item) then
+            i = i + 1
+            str = str .. (i > 1 and separator or "") .. item
         end
     end
-    return _7w47
+    return str
 end
-local _8vMn = function(_ISy1)
-    local _sR9a = 0x0
-    for _heQK, _TuDN in pairs(_ISy1) do _sR9a = _sR9a + 0x1 end
-    return _sR9a
+local getLength = function(table)
+    local length = 0
+    for _, _ in pairs(table) do length = length + 1 end
+    return length
 end

@@ -1,29 +1,29 @@
-local _dYv2 = DYCInfoPanel
-local _W8Zx = _dYv2.DYCModRequire
-local _tof5 = _W8Zx("dyc_odwutil")
-local _dVij = _tof5.ShowObjectDetail
-local _O4PR = _tof5.ClearUpdateOdwTask
-local _w9lT = _tof5.CreateUpdateOdwTask
-local function _SwDp() return rawget(_G, "GetWorld") and rawget(_G, "GetWorld")() or rawget(_G, "TheWorld") end
-local function _Iobl(_xwQH, ...)
-    local _XjjZ = _SwDp()
-    if _XjjZ then
-        _dVij(_XjjZ, _xwQH)
-        _O4PR(_xwQH)
-        _w9lT(_xwQH, _XjjZ)
+local DYCInfoPanel = DYCInfoPanel
+local DYCModRequire = DYCInfoPanel.DYCModRequire
+local dycOdwutil = DYCModRequire("dyc_odwutil")
+local ShowObjectDetail = dycOdwutil.ShowObjectDetail
+local ClearUpdateOdwTask = dycOdwutil.ClearUpdateOdwTask
+local CreateUpdateOdwTask = dycOdwutil.CreateUpdateOdwTask
+local function getWorld() return rawget(_G, "GetWorld") and rawget(_G, "GetWorld")() or rawget(_G, "TheWorld") end
+local function OnGainFocus(self, ...)
+    local world = getWorld()
+    if world then
+        ShowObjectDetail(world, self)
+        ClearUpdateOdwTask(self)
+        CreateUpdateOdwTask(self, world)
     end
-    return _xwQH.dycOldOnGainFocus(_xwQH, ...)
+    return self.dycOldOnGainFocus(self, ...)
 end
-local function _rNwy(_rZcv, ...)
-    _dVij(nil, _rZcv)
-    _O4PR(_rZcv)
-    return _rZcv.dycOldOnLoseFocus(_rZcv, ...)
+local function OnLoseFocus(self, ...)
+    ShowObjectDetail(nil, self)
+    ClearUpdateOdwTask(self)
+    return self.dycOldOnLoseFocus(self, ...)
 end
-local function _sqMr(_Jxwd)
-    _Jxwd.dycOldOnGainFocus = _Jxwd.OnGainFocus
-    _Jxwd.OnGainFocus = _Iobl
-    _Jxwd.dycOldOnLoseFocus = _Jxwd.OnLoseFocus
-    _Jxwd.OnLoseFocus = _rNwy
-    if _Jxwd.face then _Jxwd.face:SetClickable(true) end
+local function dycUiclock(origin)
+    origin.dycOldOnGainFocus = origin.OnGainFocus
+    origin.OnGainFocus = OnGainFocus
+    origin.dycOldOnLoseFocus = origin.OnLoseFocus
+    origin.OnLoseFocus = OnLoseFocus
+    if origin.face then origin.face:SetClickable(true) end
 end
-return _sqMr
+return dycUiclock

@@ -4,8 +4,8 @@ version = "1.15"
 description = "Version:" .. version .. "\n Omnipotent information panel!"
 author = "dyc"
 forumthread = ""
-api_version = 0x6
-priority = -0x1
+api_version = 6
+priority = -1
 dont_starve_compatible = true
 reign_of_giants_compatible = true
 shipwrecked_compatible = true
@@ -45,13 +45,13 @@ configuration_options = {
         name = "infopanelfs",
         label = "Info Panel Font",
         options = {
-            { description = "Very Small", lkey = "verysmall", data = 0x12, hover = "18" },
-            { description = "Small",      lkey = "small",     data = 0x16, hover = "22" },
-            { description = "Normal",     lkey = "normal",    data = 0x19, hover = "25" },
-            { description = "Large",      lkey = "large",     data = 0x1d, hover = "29" },
-            { description = "Very Large", lkey = "verylarge", data = 0x23, hover = "35" },
+            { description = "Very Small", lkey = "verysmall", data = 18, hover = "18" },
+            { description = "Small",      lkey = "small",     data = 22, hover = "22" },
+            { description = "Normal",     lkey = "normal",    data = 25, hover = "25" },
+            { description = "Large",      lkey = "large",     data = 29, hover = "29" },
+            { description = "Very Large", lkey = "verylarge", data = 35, hover = "35" },
         },
-        default = 0x19,
+        default = 25,
     },
     {
         name = "infopanelopacity",

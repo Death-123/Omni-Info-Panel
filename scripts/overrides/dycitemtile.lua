@@ -1,35 +1,35 @@
-local _dYv2 = require "widgets/uianim"
-local _W8Zx = DYCInfoPanel
-local _tof5 = _W8Zx.DYCModRequire
-local _dVij = _tof5("dyc_odwutil")
-local _O4PR = _dVij.ShowObjectDetail
-local _w9lT = _dVij.ClearUpdateOdwTask
-local _SwDp = _dVij.CreateUpdateOdwTask
-local _Iobl = _W8Zx.lib.StrSpl
-local _xwQH = _W8Zx.lib.StringStartWith
-local function _XjjZ(_rNwy, ...)
-    local _rZcv = _rNwy.item
-    _O4PR(_rZcv, _rNwy)
-    _w9lT(_rNwy)
-    _SwDp(_rNwy, _rZcv)
-    return _rNwy.dycOldOnGainFocus(_rNwy, ...)
+local Uianim = require "widgets/uianim"
+local DYCInfoPanel = DYCInfoPanel
+local DYCModRequire = DYCInfoPanel.DYCModRequire
+local dycOdwutil = DYCModRequire("dyc_odwutil")
+local ShowObjectDetail = dycOdwutil.ShowObjectDetail
+local ClearUpdateOdwTask = dycOdwutil.ClearUpdateOdwTask
+local CreateUpdateOdwTask = dycOdwutil.CreateUpdateOdwTask
+local StrSpl = DYCInfoPanel.lib.StrSpl
+local StringStartWith = DYCInfoPanel.lib.StringStartWith
+local function OnGainFocus(self, ...)
+    local item = self.item
+    ShowObjectDetail(item, self)
+    ClearUpdateOdwTask(self)
+    CreateUpdateOdwTask(self, item)
+    return self.dycOldOnGainFocus(self, ...)
 end
-local function _sqMr(_Jxwd, ...)
-    _O4PR(nil, _Jxwd)
-    _w9lT(_Jxwd)
-    return _Jxwd.dycOldOnLoseFocus(_Jxwd, ...)
+local function OnLoseFocus(self, ...)
+    ShowObjectDetail(nil, self)
+    ClearUpdateOdwTask(self)
+    return self.dycOldOnLoseFocus(self, ...)
 end
-local function _MMjA(_FKYe, ...)
-    _O4PR(nil, _FKYe)
-    return _FKYe.dycOldKill(_FKYe, ...)
+local function Kill(self, ...)
+    ShowObjectDetail(nil, self)
+    return self.dycOldKill(self, ...)
 end
-local function _m4IQ(_eKwE)
-    local _VZzT = _eKwE.item
-    _eKwE.dycOldOnGainFocus = _eKwE.OnGainFocus
-    _eKwE.OnGainFocus = _XjjZ
-    _eKwE.dycOldOnLoseFocus = _eKwE.OnLoseFocus
-    _eKwE.OnLoseFocus = _sqMr
-    _eKwE.dycOldKill = _eKwE.Kill
-    _eKwE.Kill = _MMjA
+local function dycItemTile(origin)
+    local item = origin.item
+    origin.dycOldOnGainFocus = origin.OnGainFocus
+    origin.OnGainFocus = OnGainFocus
+    origin.dycOldOnLoseFocus = origin.OnLoseFocus
+    origin.OnLoseFocus = OnLoseFocus
+    origin.dycOldKill = origin.Kill
+    origin.Kill = Kill
 end
-return _m4IQ
+return dycItemTile

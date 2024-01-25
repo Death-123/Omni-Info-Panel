@@ -1,69 +1,73 @@
-local function _8lSb(_pxHV) return _pxHV ~= nil and type(_pxHV) == "table" end
-local function _VD12(_JDju) return _JDju ~= nil and type(_JDju) == "string" end
-local function _tS5s(_HPv8) return _VD12(_HPv8) and #_HPv8 > 0x0 end
-local _AY7l = {}
-_AY7l.fallback = "en"
-_AY7l.language = _AY7l.fallback
-_AY7l.supportedLanguage = _AY7l.fallback
-function _AY7l:SetLanguage(_hthw)
-    local _Lv96 = self:GetSupportedLanguage(_hthw)
-    self.language = _hthw or self:GetLanguage()
-    self.supportedLanguage = _Lv96
-    self.strings = self:GetStrings(_Lv96)
+local function isTable(table) return table ~= nil and type(table) == "table" end
+local function isStr(str) return str ~= nil and type(str) == "string" end
+local function isStrNotEmpty(str) return isStr(str) and #str > 0 end
+local localization = {}
+localization.fallback = "en"
+localization.language = localization.fallback
+localization.supportedLanguage = localization.fallback
+function localization:SetLanguage(language)
+    local langId = self:GetSupportedLanguage(language)
+    self.language = language or self:GetLanguage()
+    self.supportedLanguage = langId
+    self.strings = self:GetStrings(langId)
 end
 
-function _AY7l:L2S(_KYEA)
-    local _4MyP = self["strings_" .. _KYEA]
-    if _4MyP then _4MyP._LANGUAGE = _KYEA elseif self["strings_" .. self.fallback] then self["strings_" .. self.fallback]._LANGUAGE = self.fallback end
-    return _4MyP or self["strings_" .. self.fallback]
+function localization:L2S(language)
+    local langStrings = self["strings_" .. language]
+    if langStrings then
+        langStrings._LANGUAGE = language
+    elseif self["strings_" .. self.fallback] then
+        self["strings_" .. self.fallback]._LANGUAGE = self.fallback
+    end
+    return langStrings or self["strings_" .. self.fallback]
 end
 
-function _AY7l:GetLanguage() return string.lower(LanguageTranslator and LanguageTranslator.defaultlang or self.fallback) end
+function localization:GetLanguage() return string.lower(LanguageTranslator and LanguageTranslator.defaultlang or self.fallback) end
 
-function _AY7l:GetSupportedLanguage(_DXJS)
-    local _hQXb = _DXJS or self:GetLanguage()
-    if _hQXb and type(_hQXb) == "string" then
-        _hQXb = string.lower(_hQXb)
-        return self.languageAliasTable[_hQXb] or self.fallback
+function localization:GetSupportedLanguage(languageName)
+    local SupportedLanguageStr = languageName or self:GetLanguage()
+    if SupportedLanguageStr and type(SupportedLanguageStr) == "string" then
+        SupportedLanguageStr = string.lower(SupportedLanguageStr)
+        return self.languageAliasTable[SupportedLanguageStr] or self.fallback
     end
     return self.fallback
 end
 
-function _AY7l:GetStrings(_6crt)
-    local _ZULB = self:GetSupportedLanguage(_6crt)
-    local _AvOC = self:L2S(_ZULB)
-    _AvOC.GetString = function(_wFqo, _EmTF, _nEx4)
-        _EmTF = string.lower(_EmTF)
-        return (_tS5s(_wFqo[_EmTF]) and _wFqo[_EmTF]) or (_VD12(self.strings_en[_EmTF]) and self.strings_en[_EmTF]) or _nEx4 or "N/A"
+function localization:GetStrings(languageName)
+    local langId = self:GetSupportedLanguage(languageName)
+    local langStrings = self:L2S(langId)
+    langStrings.GetString = function(strings, langKey, default)
+        langKey = string.lower(langKey)
+        return (isStrNotEmpty(strings[langKey]) and strings[langKey]) or (isStr(self.strings_en[langKey]) and self.strings_en[langKey]) or default or "N/A"
     end
-    _AvOC.HasString = function(_rQEN, _opdB)
-        _opdB = string.lower(_opdB)
-        return _tS5s(_rQEN[_opdB]) or _VD12(self.strings_en[_opdB])
+    langStrings.HasString = function(strings, langKey)
+        langKey = string.lower(langKey)
+        return isStrNotEmpty(strings[langKey]) or isStr(self.strings_en[langKey])
     end
-    _AvOC.GetStrings = function(_FfzJ, _dPg0)
-        local _mdaJ = _8lSb(_FfzJ[_dPg0]) and _FfzJ[_dPg0] or {}
-        if not _mdaJ.GetString then _mdaJ.GetString = function(_85s7, _Hvn5, _6sYB) return _85s7[_Hvn5] or (_8lSb(self.strings_en[_dPg0]) and self.strings_en[_dPg0][_Hvn5]) or _6sYB or "N/A" end end
-        return _mdaJ
+    langStrings.GetStrings = function(strings, langKey)
+        local langStrings = isTable(strings[langKey]) and strings[langKey] or {}
+        if not langStrings.GetString then langStrings.GetString = function(self, langKey, default) return self[langKey] or (isTable(self.strings_en[langKey]) and self.strings_en[langKey][langKey]) or default or "N/A" end end
+        return langStrings
     end
     if not self.strings then
-        self.language = _6crt or self:GetLanguage()
-        self.supportedLanguage = _ZULB
-        self.strings = _AvOC
+        self.language = languageName or self:GetLanguage()
+        self.supportedLanguage = langId
+        self.strings = langStrings
     end
-    return _AvOC
+    return langStrings
 end
 
-function _AY7l:GetString(_Owcj, _p8ml)
+function localization:GetString(langKey, default)
     if not self.strings then self:GetStrings() end
-    return self.strings:GetString(_Owcj, _p8ml)
+    return self.strings:GetString(langKey, default)
 end
 
-function _AY7l:HasString(_rm6r)
+function localization:HasString(langKey)
     if not self.strings then self:GetStrings() end
-    return self.strings:HasString(_rm6r)
+    return self.strings:HasString(langKey)
 end
 
-_AY7l.strings_en = {
+localization.strings_en = {
     version = "Version",
     other = "Other",
     prefab = "Prefab",
@@ -316,7 +320,7 @@ _AY7l.strings_en = {
     watcher_hassler = "WARNING: The %s is approaching!",
     watcher_hasslerskipped = "%s attack skipped.",
 }
-_AY7l.strings_chs = {
+localization.strings_chs = {
     modicon = "preview_chs.tex",
     modiconatlas = "preview_chs.xml",
     longdesnospace = "false",
@@ -609,7 +613,7 @@ _AY7l.strings_chs = {
     watcher_hassler = "警告：%s正在接近！！！",
     watcher_hasslerskipped = "%s攻击跳过了。",
 }
-_AY7l.languageAliasTable = {
+localization.languageAliasTable = {
     en = "en",
     english = "en",
     chs = "chs",
@@ -623,4 +627,4 @@ _AY7l.languageAliasTable = {
     tw = "cht",
     traditionalchinese = "cht",
 }
-return _AY7l
+return localization

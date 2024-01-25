@@ -1,27 +1,27 @@
-local function _dYv2(_W8Zx) return _W8Zx.dycSpawnTime end
-local function _tof5(_dVij, _O4PR) _dVij.dycSpawnTime = GetTime() + (_O4PR or 0x0) end
-local function _w9lT(_SwDp, ...)
-    local _Iobl = _SwDp.dycOldGetNextSpawnTime and _SwDp.dycOldGetNextSpawnTime(_SwDp, ...)
-    _tof5(_SwDp, _Iobl)
-    return _Iobl
+local function getDycSpawnTime(self) return self.dycSpawnTime end
+local function setDycSpawnTime(self, time) self.dycSpawnTime = GetTime() + (time or 0) end
+local function GetNextSpawnTime(self, ...)
+    local time = self.dycOldGetNextSpawnTime and self.dycOldGetNextSpawnTime(self, ...)
+    setDycSpawnTime(self, time)
+    return time
 end
-local function _xwQH(_XjjZ, _rNwy, ...)
-    local _rZcv = _XjjZ.dycOldOnLoad and _XjjZ.dycOldOnLoad(_XjjZ, _rNwy, ...)
-    if _XjjZ.nexttime then _tof5(_XjjZ, _XjjZ.nexttime) end
-    return _rZcv
+local function OnLoad(self, arg, ...)
+    local data = self.dycOldOnLoad and self.dycOldOnLoad(self, arg, ...)
+    if self.nexttime then setDycSpawnTime(self, self.nexttime) end
+    return data
 end
-local function _sqMr(_Jxwd, _MMjA, ...)
-    local _FKYe = _Jxwd.dycOldLongUpdate and _Jxwd.dycOldLongUpdate(_Jxwd, _MMjA, ...)
-    local _m4IQ = _dYv2(_Jxwd)
-    if _m4IQ then _tof5(_Jxwd, _m4IQ - GetTime() - _MMjA) end
-    return _FKYe
+local function LongUpdate(self, updateTime, ...)
+    local data = self.dycOldLongUpdate and self.dycOldLongUpdate(self, updateTime, ...)
+    local time = getDycSpawnTime(self)
+    if time then setDycSpawnTime(self, time - GetTime() - updateTime) end
+    return data
 end
-local function _eKwE(_VZzT)
-    _VZzT.dycOldGetNextSpawnTime = _VZzT.GetNextSpawnTime
-    _VZzT.GetNextSpawnTime = _w9lT
-    _VZzT.dycOldOnLoad = _VZzT.OnLoad
-    _VZzT.OnLoad = _xwQH
-    _VZzT.dycOldLongUpdate = _VZzT.LongUpdate
-    _VZzT.LongUpdate = _sqMr
+local function dycRocmanager(origin)
+    origin.dycOldGetNextSpawnTime = origin.GetNextSpawnTime
+    origin.GetNextSpawnTime = GetNextSpawnTime
+    origin.dycOldOnLoad = origin.OnLoad
+    origin.OnLoad = OnLoad
+    origin.dycOldLongUpdate = origin.LongUpdate
+    origin.LongUpdate = LongUpdate
 end
-return _eKwE
+return dycRocmanager

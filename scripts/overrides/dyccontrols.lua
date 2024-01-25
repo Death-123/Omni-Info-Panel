@@ -1,38 +1,38 @@
-local _RhkC = DYCInfoPanel
-local _I9Pv = _RhkC.DYCModRequire
-local _uusB = _I9Pv("dyc_odwutil")
-local _dB6j = _uusB.ShowObjectDetail
-local _59oF = _uusB.FollowObject
-local function _pdDj(_ieSu)
-    local _iwg8 = _RhkC.objectDetailWindow
-    if _iwg8 and _iwg8.shown and _ieSu and _iwg8.focusedObject and _iwg8.focusedObject == _ieSu then _59oF(_ieSu) end
+local DYCInfoPanel = DYCInfoPanel
+local DYCModRequire = DYCInfoPanel.DYCModRequire
+local dycOdwutil = DYCModRequire("dyc_odwutil")
+local ShowObjectDetail = dycOdwutil.ShowObjectDetail
+local FollowObject = dycOdwutil.FollowObject
+local function tryFollowObject(target)
+    local objectDetailWindow = DYCInfoPanel.objectDetailWindow
+    if objectDetailWindow and objectDetailWindow.shown and target and objectDetailWindow.focusedObject and objectDetailWindow.focusedObject == target then FollowObject(target) end
 end
-local _68g1 = nil
-local _HpzU, lastY, lastZ = 0x3e7, 0x3e7, 0x3e7
-local function _almK(_0TLg, _TjVe, _6hkN, ...)
+local lastTarget = nil
+local lastX, lastY, lastZ = 999, 999, 999
+local function HighlightActionItem(self, itemIndex, itemInActions, ...)
     if TheInput:ControllerAttached() then
-        if _TjVe then
-            local _NbtE = _0TLg.owner
-            local _rum8 = _NbtE and _NbtE.components.playercontroller
-            local _nuEf = _rum8 and _rum8.controller_target
-            if _nuEf ~= _68g1 then _dB6j(_nuEf) end
-            if _nuEf then
-                local _ufMP, y, z = TheSim:GetScreenPos(_nuEf.Transform:GetWorldPosition())
-                if _ufMP ~= _HpzU or y ~= lastY or z ~= lastZ then
-                    _pdDj(_nuEf)
-                    _HpzU, lastY, lastZ = _ufMP, y, z
+        if itemIndex then
+            local owner = self.owner
+            local playercontroller = owner and owner.components.playercontroller
+            local controller_target = playercontroller and playercontroller.controller_target
+            if controller_target ~= lastTarget then ShowObjectDetail(controller_target) end
+            if controller_target then
+                local x, y, z = TheSim:GetScreenPos(controller_target.Transform:GetWorldPosition())
+                if x ~= lastX or y ~= lastY or z ~= lastZ then
+                    tryFollowObject(controller_target)
+                    lastX, lastY, lastZ = x, y, z
                 end
             end
-            _68g1 = _nuEf
+            lastTarget = controller_target
         else
-            if _68g1 ~= nil then _dB6j() end
-            _68g1 = nil
+            if lastTarget ~= nil then ShowObjectDetail() end
+            lastTarget = nil
         end
     end
-    return _0TLg.dycOldHighlightActionItem(_0TLg, _TjVe, _6hkN, ...)
+    return self.dycOldHighlightActionItem(self, itemIndex, itemInActions, ...)
 end
-local function _KDEd(_13sz)
-    _13sz.dycOldHighlightActionItem = _13sz.HighlightActionItem
-    _13sz.HighlightActionItem = _almK
+local function dycControls(origin)
+    origin.dycOldHighlightActionItem = origin.HighlightActionItem
+    origin.HighlightActionItem = HighlightActionItem
 end
-return _KDEd
+return dycControls
