@@ -78,13 +78,13 @@ end
 --#endregion
 
 --#region dycRoot
-local Root = Class(Widget, function(self, parent)
+local dycRoot = Class(Widget, function(self, parent)
     Widget._ctor(self, "DYC_Root")
     self.keepTop = parent.keepTop
     self.moveLayerTimer = 0
     if parent.keepTop then self:StartUpdating() end
 end)
-function Root:OnUpdate(time)
+function dycRoot:OnUpdate(time)
     time = time or 0
     self.moveLayerTimer = self.moveLayerTimer + time
     if self.keepTop and self.moveLayerTimer > 0.5 then
@@ -93,7 +93,7 @@ function Root:OnUpdate(time)
     end
 end
 
-dycGuis.Root = Root
+dycGuis.Root = dycRoot
 --#endregion
 
 --#region dycText
@@ -1024,10 +1024,10 @@ dycGuis.Banner = dycBanner
 --#endregion
 
 --#region dycBannerHolder
-local dycBannerHolder = Class(Root,
+local dycBannerHolder = Class(dycRoot,
     function(self, data)
         data = data or {}
-        Root._ctor(self, data)
+        dycRoot._ctor(self, data)
         self.banners = {}
         self.bannerInfos = {}
         self.bannerInterval = data.interval or 0.3

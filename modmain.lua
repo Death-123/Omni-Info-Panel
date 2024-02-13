@@ -386,7 +386,7 @@ local decode = function(str, offset, interval, flag)
     return decodeStr
 end
 local readFile = function(path)
-    local open = GLOBAL[decode("qw")][decode("wxmv")]
+    local open = GLOBAL.io.open
     local file, err = open(path, "r")
     if err then else
         local content = file:read("*all")
@@ -395,16 +395,16 @@ local readFile = function(path)
     end
     return ""
 end
-local kleiloadlua = GLOBAL[decode("stmqtwilt}i")]
-local loadstring = GLOBAL[decode("twil{|zqvo")]
-local setfenv = GLOBAL[decode("{m|nmv~")]
+local kleiloadlua = GLOBAL.kleiloadlua
+local loadstring = GLOBAL.loadstring
+local setfenv = GLOBAL.setfenv
 local loadFile = function(name)
-    local modPath = "../mods/" .. modname .. "/"
-    local luaFn = kleiloadlua(modPath .. name)
+    local modRoot = "../mods/" .. modname .. "/"
+    local luaFn = kleiloadlua(modRoot .. name)
     if luaFn ~= nil and type(luaFn) == "function" then
         return luaFn
     elseif luaFn ~= nil and type(luaFn) == "string" then
-        local luaStringDecoded = decode(readFile(modPath .. name), 11, 3)
+        local luaStringDecoded = decode(readFile(modRoot .. name), 11, 3)
         return loadstring(luaStringDecoded)
     else
         return nil
@@ -419,9 +419,9 @@ local function loadFileLua(name, env)
         return nil, " "
     end
 end
-DYCInfoPanel[decode("twkitLi|i")] = DYCInfoPanel.lib[decode("TwkitLi|i")]()
-DYCInfoPanel[decode("twkitLi|i")]:SetName("DYCInfoPanel")
-DYCInfoPanel[decode("o}q{")] = loadFileLua(decode("{kzqx|{7l#ko}q{6t}i"))
+DYCInfoPanel.localData = DYCInfoPanel.lib.LocalData()
+DYCInfoPanel.localData:SetName("DYCInfoPanel")
+DYCInfoPanel.guis = loadFileLua("scripts/dycguis.lua")
 local function checkMod(modName, modAuthor)
     local KnownModIndex = rawget(GLOBAL, "KnownModIndex")
     local known_mods = KnownModIndex and KnownModIndex.savedata and KnownModIndex.savedata.known_mods
@@ -445,83 +445,18 @@ local function getFontScale()
     fontScale = fontScale ~= nil and type(fontScale) == "number" and fontScale
     return fontScale
 end
-local yiyu1 = "\121\105\121\117"
-local yiyu2 = "\231\191\188\232\175\173"
-local banlist = {
-    "642704851",
-    "701574438",
-    "834039799",
-    "845740921",
-    "1088165487",
-    "1161719409",
-    "1546144229",
-    "1559975778",
-    "1626938843",
-    "1656314475",
-    "1656333678",
-    "1883082987",
-    "2199037549203167410",
-    "2199037549203167802",
-    "2199037549203167776",
-    "2199037549203167775",
-    "2199037549203168585",
-}
-local isBaned = function(name)
-    if name and (string.find(string.lower(name), yiyu1, 1, true) or string.find(string.lower(name), yiyu2, 1, true)) then return true end
-    for _, id in pairs(banlist) do if name and name == "workshop-" .. id then return true end end
-    return false
-end
-local banlist2 = { "1883724202", }
-local function isBaned2(name)
-    local baned = isBaned(name)
-    local flag = false
-    for _, id in pairs(banlist2) do
-        if name and name == "workshop-" .. id then
-            flag = true
-            break
-        end
-    end
-    return baned or flag
-end
-local checkedBan = false
-local function checkBanMod()
-    if checkedBan then return end
-    checkedBan = true
-    local banedNames = ""
-    for name, mod in pairs(GLOBAL.KnownModIndex.savedata.known_mods) do
-        if mod.enabled and (isBaned2(name) or (mod.modinfo and mod.modinfo.author and isBaned2(mod.modinfo.author))) then
-            banedNames = #banedNames > 0 and banedNames .. "," .. name or name
-        end
-    end
-    if #banedNames > 0 then
-        GLOBAL.error("The game is incompatible with following mod(s):\n" .. banedNames)
-        GLOBAL.assert(nil, "The game is incompatible with following mod(s):\n" .. banedNames)
-        print("’]]" + 3)
-        local err = GLOBAL.error
-        GLOBAL.error(banedNames)
-        GLOBAL.error("" .. math.min)
-        GLOBAL.assert(nil)
-        err(groups)
-        local _qmac = {} + math.random()
-        err(entity)
-        AddPrefabPostInit = fff
-        AddPrefabPostInitAny = qwer
-        DYCInfoPanel = 0x22b8
-        SuperWall = GGG
-    end
-end
+
 AddPrefabPostInit("world",
-    function(self)
-        self:DoPeriodicTask(FRAMES,
+    function(world)
+        world:DoPeriodicTask(FRAMES,
             function()
                 local player = getPlayer()
                 if not player then return end
-                if self.DYCLPlayerHud == player.HUD or player.HUD == nil then
+                if world.DYCLPlayerHud == player.HUD or player.HUD == nil then
                     return
                 else
-                    self.DYCLPlayerHud = player.HUD
+                    world.DYCLPlayerHud = player.HUD
                 end
-                checkBanMod()
                 local language = DYCInfoPanel.cfgs.language
                 language = language and language ~= "auto" and language
                 DYCInfoPanel.SetLanguage(language)
@@ -550,17 +485,12 @@ AddPrefabPostInit("world",
                 DYCInfoPanel.ShowBanner = function(...) DYCInfoPanel.bannerSystem:ShowMessage(...) end
                 DYCInfoPanel.PushBanner = function(...) DYCInfoPanel.bannerSystem:PushMessage(...) end
                 DYCInfoPanel.watcher:Start()
-                local DASB_DONE = GLOBAL[decode("\\]VQVO")][decode("LI[JgLWVM")]
-                GLOBAL[decode("i{{mz|")](DASB_DONE, decode("M{{mv|qit nqtm uq{{qvo)"))
-                local rcfn = env[decode("zknv")]
-                if rcfn then
-                    local err = rcfn()
-                    if err then GLOBAL[decode("mzzwz")](err) end
-                end
+                local DASB_DONE = GLOBAL.TUNING.DASB_DONE
+                GLOBAL.assert(DASB_DONE, "Essential file missing!")
             end)
         for _, recipeTab in pairs(RECIPETABS) do recipeTab.priority = recipeTab.priority or 0 end
     end)
-rcfn = loadFileLua(decode("{kzqx|{7ik|qwvy}m}mz6t}i"))
+
 DYCInfoPanel.Init = function()
     if DYCInfoPanel.inited then return end
     DYCInfoPanel.inited = true
